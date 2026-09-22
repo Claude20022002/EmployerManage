@@ -31,9 +31,14 @@ export function Layout() {
             </NavLink>
           )}
           {utilisateur?.is_staff && (
-            <NavLink to="/administration/agents" className={({ isActive }) => (isActive ? 'actif' : '')}>
-              Administration
-            </NavLink>
+            <>
+              <NavLink to="/administration/agents" className={({ isActive }) => (isActive ? 'actif' : '')}>
+                Agents
+              </NavLink>
+              <NavLink to="/administration/organisation" className={({ isActive }) => (isActive ? 'actif' : '')}>
+                Organisation
+              </NavLink>
+            </>
           )}
         </nav>
         <div className="compte">

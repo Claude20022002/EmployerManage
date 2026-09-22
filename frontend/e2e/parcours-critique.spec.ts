@@ -142,13 +142,13 @@ test("le personnel RH peut créer un compte agent avec un mot de passe temporair
   page,
 }) => {
   await connecter(page, 'AG001')
-  await expect(page.getByRole('link', { name: 'Administration' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Agents' })).toHaveCount(0)
   await page.goto('/administration/agents')
   await expect(page).toHaveURL(/mes-demandes/) // redirigé, accès refusé
   await deconnecter(page)
 
   await connecter(page, 'RH001')
-  await page.getByRole('link', { name: 'Administration' }).click()
+  await page.getByRole('link', { name: 'Agents' }).click()
 
   const matricule = `E2E${Date.now().toString().slice(-6)}`
   await page.getByLabel('Matricule').fill(matricule)
@@ -183,4 +183,24 @@ test("un agent peut annuler sa propre demande avant décision finale", async ({ 
 
   await expect(page.getByText('Annulée').first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Annuler ma demande' })).toHaveCount(0)
+})
+
+test('le personnel RH peut créer une direction puis un service rattaché', async ({ page }) => {
+  await connecter(page, 'RH001')
+  await page.getByRole('link', { name: 'Organisation' }).click()
+
+  const suffixe = Date.now().toString().slice(-6)
+  const nomDirection = `Direction E2E ${suffixe}`
+  const nomService = `Service E2E ${suffixe}`
+
+  await page.getByPlaceholder('Nom de la direction').fill(nomDirection)
+  await page.getByRole('button', { name: 'Ajouter' }).first().click()
+  await expect(page.getByRole('cell', { name: nomDirection })).toBeVisible()
+
+  await page.getByPlaceholder('Nom du service').fill(nomService)
+  await page.locator('select').filter({ hasText: 'Direction de rattachement…' }).selectOption({ label: nomDirection })
+  await page.getByRole('button', { name: 'Ajouter' }).last().click()
+
+  await expect(page.getByText(nomService)).toBeVisible()
+  await expect(page.getByRole('row', { name: new RegExp(nomService) })).toContainText(nomDirection)
 })

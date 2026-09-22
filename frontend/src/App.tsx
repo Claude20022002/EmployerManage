@@ -4,6 +4,7 @@ import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
 import { AdministrationAgents } from './pages/AdministrationAgents'
+import { AdministrationOrganisation } from './pages/AdministrationOrganisation'
 import { AValider } from './pages/AValider'
 import { ChangerMotDePasse } from './pages/ChangerMotDePasse'
 import { Connexion } from './pages/Connexion'
@@ -28,6 +29,7 @@ function App() {
             <Route path="/a-valider" element={<AValider />} />
             <Route path="/demandes/:id" element={<DemandeDetail />} />
             <Route path="/administration/agents" element={<AdministrationAgents />} />
+            <Route path="/administration/organisation" element={<AdministrationOrganisation />} />
           </Route>
         </Route>
       </Routes>

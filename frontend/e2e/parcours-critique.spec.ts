@@ -137,3 +137,26 @@ test('un congé de maladie exige ses justificatifs avant de pouvoir être soumis
   await boutonSoumettre.click()
   await expect(page).toHaveURL(/mes-demandes/)
 })
+
+test("le personnel RH peut créer un compte agent avec un mot de passe temporaire, un agent normal ne voit pas le menu", async ({
+  page,
+}) => {
+  await connecter(page, 'AG001')
+  await expect(page.getByRole('link', { name: 'Administration' })).toHaveCount(0)
+  await page.goto('/administration/agents')
+  await expect(page).toHaveURL(/mes-demandes/) // redirigé, accès refusé
+  await deconnecter(page)
+
+  await connecter(page, 'RH001')
+  await page.getByRole('link', { name: 'Administration' }).click()
+
+  const matricule = `E2E${Date.now().toString().slice(-6)}`
+  await page.getByLabel('Matricule').fill(matricule)
+  await page.getByLabel('Email').fill(`${matricule.toLowerCase()}@mefb.gouv.gn`)
+  await page.getByLabel('Prénom').fill('Test')
+  await page.getByLabel('Nom').fill('E2E')
+  await page.getByRole('button', { name: 'Créer le compte' }).click()
+
+  await expect(page.getByText('Mot de passe temporaire')).toBeVisible()
+  await expect(page.getByText(matricule, { exact: false }).first()).toBeVisible()
+})

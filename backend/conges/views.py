@@ -95,6 +95,17 @@ class DemandeCongeViewSet(viewsets.ModelViewSet):
         demande.refresh_from_db()
         return Response(DemandeCongeDetailSerializer(demande).data)
 
+    @action(detail=True, methods=["post"], url_path="annuler")
+    def annuler(self, request, pk=None):
+        demande = self.get_object()
+        if demande.agent_id != request.user.id:
+            raise PermissionDenied("Seul le demandeur peut annuler sa demande.")
+        try:
+            services.annuler_demande(demande)
+        except DjangoValidationError as exc:
+            raise ValidationError(exc.messages if hasattr(exc, "messages") else str(exc))
+        return Response(DemandeCongeDetailSerializer(demande).data)
+
     @action(detail=True, methods=["post"], url_path=r"etapes/(?P<etape_id>\d+)/approuver")
     def approuver(self, request, pk=None, etape_id=None):
         return self._decider(request, pk, etape_id, approuver=True)

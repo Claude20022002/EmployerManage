@@ -168,3 +168,32 @@ class ParcoursCompletDemandeCongeTests(APITestCase):
             f"/api/demandes/{demande_id}/etapes/{etape_dir}/approuver/", {"commentaire": "trop tard"}
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_annulation_par_le_demandeur(self):
+        self._connecter("AG001")
+        response = self.client.post(
+            "/api/demandes/",
+            {"type_conge": self.type_conge.id, "date_debut": "2027-04-01", "date_fin_demandee": "2027-04-05"},
+        )
+        demande_id = response.data["id"]
+
+        response = self.client.post(f"/api/demandes/{demande_id}/annuler/")
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["statut"], StatutDemande.ANNULEE)
+
+        # Une demande annulée ne peut plus être annulée à nouveau
+        response = self.client.post(f"/api/demandes/{demande_id}/annuler/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_un_tiers_ne_peut_pas_annuler_la_demande_dautrui(self):
+        self._connecter("AG001")
+        response = self.client.post(
+            "/api/demandes/",
+            {"type_conge": self.type_conge.id, "date_debut": "2027-04-01", "date_fin_demandee": "2027-04-05"},
+        )
+        demande_id = response.data["id"]
+
+        self.client.logout()
+        self._connecter("CS001")
+        response = self.client.post(f"/api/demandes/{demande_id}/annuler/")
+        self.assertEqual(response.status_code, 403)

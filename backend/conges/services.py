@@ -178,3 +178,12 @@ def rejeter_etape(etape: EtapeValidation, commentaire: str):
     demande.statut = StatutDemande.REJETEE
     demande.save()
     return etape
+
+
+def annuler_demande(demande: DemandeConge):
+    """L'agent retire sa propre demande avant qu'elle ne soit tranchée définitivement."""
+    if demande.statut not in (StatutDemande.BROUILLON, StatutDemande.EN_COURS):
+        raise ValidationError("Seule une demande en brouillon ou en cours peut être annulée.")
+    demande.statut = StatutDemande.ANNULEE
+    demande.save()
+    return demande

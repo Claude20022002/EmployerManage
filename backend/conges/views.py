@@ -3,18 +3,19 @@ from django.http import FileResponse, Http404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from . import services
 from .attestation import code_verification_valide
-from .models import Attestation, DemandeConge, JustificatifDemande, StatutDemande, TypeConge
+from .models import Attestation, DemandeConge, JourFerie, JustificatifDemande, StatutDemande, TypeConge
 from .permissions import PeutVoirDemande, est_implique
 from .serializers import (
     DecisionEtapeSerializer,
     DemandeCongeCreateSerializer,
     DemandeCongeDetailSerializer,
     DemandeCongeListSerializer,
+    JourFerieSerializer,
     JustificatifDemandeSerializer,
     TypeCongeSerializer,
 )
@@ -24,6 +25,19 @@ class TypeCongeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TypeConge.objects.filter(actif=True).prefetch_related("justificatifs_requis__type_justificatif")
     serializer_class = TypeCongeSerializer
     permission_classes = [IsAuthenticated]
+
+
+class JourFerieViewSet(viewsets.ModelViewSet):
+    """Lecture ouverte à tout agent connecté (utile pour afficher le calendrier) ; écriture réservée au RH."""
+
+    queryset = JourFerie.objects.all()
+    serializer_class = JourFerieSerializer
+    http_method_names = ["get", "post", "delete", "head", "options"]
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
 
 
 class DemandeCongeViewSet(viewsets.ModelViewSet):

@@ -6,10 +6,17 @@ from .models import (
     Attestation,
     DemandeConge,
     EtapeValidation,
+    JourFerie,
     JustificatifDemande,
     TypeConge,
     TypeJustificatif,
 )
+
+
+class JourFerieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JourFerie
+        fields = ["id", "date", "libelle"]
 
 
 class TypeJustificatifSerializer(serializers.ModelSerializer):

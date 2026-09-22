@@ -128,6 +128,26 @@ class JustificatifDemande(models.Model):
         return f"{self.type_justificatif} — {self.demande}"
 
 
+class JourFerie(models.Model):
+    """
+    Calendrier des jours fériés guinéens, exclu du calcul des jours ouvrables (voir
+    conges/services.py::nombre_jours). Paramétrage en base, volontairement non pré-rempli avec
+    des dates devinées : les fêtes à date fixe sont notoires (voir seed_demo pour un exemple),
+    mais les fêtes musulmanes (Tabaski, Maouloud, fin du Ramadan...) suivent le calendrier
+    lunaire et changent chaque année — à saisir chaque année par un administrateur, jamais
+    codées en dur (voir CLAUDE.md : ne pas inventer de règle/donnée guinéenne non confirmée).
+    """
+
+    date = models.DateField(unique=True)
+    libelle = models.CharField(max_length=150)
+
+    class Meta:
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.date} — {self.libelle}"
+
+
 class Attestation(models.Model):
     """
     Générée à l'approbation finale d'une demande. L'authenticité repose sur numero_serie

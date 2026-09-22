@@ -14,7 +14,7 @@ from django.utils import timezone
 from accounts.models import RoleHierarchique, User
 
 from .attestation import generer_attestation
-from .models import DecisionEtape, DemandeConge, EtapeValidation, StatutDemande
+from .models import DecisionEtape, DemandeConge, EtapeValidation, JourFerie, StatutDemande
 
 
 def _trouver_chef_cabinet() -> User:

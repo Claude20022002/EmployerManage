@@ -61,7 +61,7 @@ test('parcours critique complet : demande -> 3 niveaux d\'approbation -> attesta
   // 2. Le chef de service approuve
   await connecter(page, 'CS001')
   await page.getByRole('link', { name: 'À valider' }).click()
-  await expect(page.getByText('Ibrahima Sylla')).toBeVisible()
+  await expect(page.getByText('Ibrahima Sylla').first()).toBeVisible()
   await page.getByRole('link', { name: 'Examiner' }).first().click()
   await page.getByLabel('Commentaire').fill('Accord du chef de service.')
   await page.getByRole('button', { name: 'Approuver' }).click()
@@ -154,7 +154,7 @@ test("le personnel RH peut créer un compte agent avec un mot de passe temporair
   await page.getByLabel('Matricule').fill(matricule)
   await page.getByLabel('Email').fill(`${matricule.toLowerCase()}@mefb.gouv.gn`)
   await page.getByLabel('Prénom').fill('Test')
-  await page.getByLabel('Nom').fill('E2E')
+  await page.getByLabel('Nom', { exact: true }).fill('E2E')
   await page.getByRole('button', { name: 'Créer le compte' }).click()
 
   await expect(page.getByText('Mot de passe temporaire')).toBeVisible()

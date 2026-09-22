@@ -125,7 +125,7 @@ export function DemandeDetail() {
               {demande.justificatifs.map((j) => (
                 <li key={j.id}>
                   {j.type_justificatif_libelle} —{' '}
-                  <a href={`${API_ORIGIN}${j.fichier}`} target="_blank" rel="noreferrer">
+                  <a href={`${API_ORIGIN}${j.fichier_url}`} target="_blank" rel="noreferrer">
                     voir le fichier
                   </a>
                 </li>
@@ -146,7 +146,7 @@ export function DemandeDetail() {
           <p>Numéro de série : {demande.attestation.numero_serie}</p>
           <a
             className="bouton bouton-primaire"
-            href={`${API_ORIGIN}${demande.attestation.fichier_pdf}`}
+            href={`${API_ORIGIN}${demande.attestation.fichier_url}`}
             target="_blank"
             rel="noreferrer"
           >

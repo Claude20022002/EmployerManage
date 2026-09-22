@@ -53,7 +53,7 @@ export interface JustificatifDemande {
   id: number
   type_justificatif: number
   type_justificatif_libelle: string
-  fichier: string
+  fichier_url: string
   depose_le: string
 }
 
@@ -70,7 +70,7 @@ export interface EtapeValidation {
 
 export interface Attestation {
   numero_serie: string
-  fichier_pdf: string
+  fichier_url: string
   generee_le: string
 }
 

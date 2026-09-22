@@ -64,6 +64,7 @@ class DemandeCongeViewSet(viewsets.ModelViewSet):
             self.get_queryset()
             .filter(statut=StatutDemande.EN_COURS, etapes__validateur=request.user)
             .distinct()
+            .order_by("-cree_le")
         )
         resultat = [d for d in candidates if (e := services.etape_courante(d)) and e.validateur_id == request.user.id]
         serializer = self.get_serializer(resultat, many=True)

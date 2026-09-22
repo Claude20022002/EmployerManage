@@ -25,11 +25,23 @@ class Command(BaseCommand):
         service.save()
 
         agent = self._upsert_user("AG001", "Sylla", "Ibrahima", RoleHierarchique.AGENT, service=service)
+        rh = self._upsert_user("RH001", "Kaba", "Mariame", RoleHierarchique.AGENT, is_staff=True)
 
+        # Maladie courte/longue durée : seuil et justificatif renforcé confirmés par l'utilisateur
+        # le 2026-09-22 (3 mois ; avis du conseil de santé pour la longue durée) — voir
+        # docs/03-architecture.md.
         types = [
             ("normal", "Congé normal", 30, 30, True, []),
             ("maternite", "Congé de maternité", 90, 90, False, ["certificat-grossesse"]),
-            ("maladie", "Congé de maladie", 1, 180, False, ["bulletin-paie", "rapport-medical"]),
+            ("maladie-courte-duree", "Congé de maladie (courte durée)", 1, 90, False, ["bulletin-paie", "rapport-medical"]),
+            (
+                "maladie-longue-duree",
+                "Congé de maladie (longue durée)",
+                91,
+                None,
+                False,
+                ["bulletin-paie", "rapport-medical", "avis-conseil-sante"],
+            ),
             ("formation", "Congé de formation", 90, None, False, ["arrete-engagement", "acte-affectation", "attestation-bac"]),
             ("exceptionnel", "Congé exceptionnel", 1, 10, False, []),
         ]
@@ -37,6 +49,7 @@ class Command(BaseCommand):
             "certificat-grossesse": "Certificat de grossesse",
             "bulletin-paie": "Bulletin de paie",
             "rapport-medical": "Rapport médical",
+            "avis-conseil-sante": "Avis du conseil de santé",
             "arrete-engagement": "Arrêté d'engagement",
             "acte-affectation": "Acte d'affectation",
             "attestation-bac": "Copie de l'attestation du BAC",
@@ -61,10 +74,10 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Données de démonstration créées."))
         self.stdout.write(f"Mot de passe pour tous les comptes de démo : {MOT_DE_PASSE_DEMO}")
-        for u in [agent, chef_service, directeur, chef_cabinet]:
-            self.stdout.write(f"  {u.matricule} — {u.role_hierarchique} — {u.first_name} {u.last_name}")
+        for u in [agent, chef_service, directeur, chef_cabinet, rh]:
+            self.stdout.write(f"  {u.matricule} — {u.role_hierarchique}{' (staff/RH)' if u.is_staff else ''} — {u.first_name} {u.last_name}")
 
-    def _upsert_user(self, matricule, nom, prenom, role, service=None):
+    def _upsert_user(self, matricule, nom, prenom, role, service=None, is_staff=False):
         user, cree = User.objects.get_or_create(
             matricule=matricule,
             defaults={
@@ -75,6 +88,7 @@ class Command(BaseCommand):
                 "role_hierarchique": role,
                 "service": service,
                 "must_change_password": False,
+                "is_staff": is_staff,
             },
         )
         if cree:

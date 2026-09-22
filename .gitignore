@@ -1,0 +1,33 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+*.sqlite3
+/backend/staticfiles/
+/backend/media/
+.env
+.env.*
+!.env.example
+
+# Node / React
+node_modules/
+/frontend/dist/
+/frontend/build/
+.vite/
+*.local
+
+# Tests
+.pytest_cache/
+coverage/
+htmlcov/
+playwright-report/
+test-results/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

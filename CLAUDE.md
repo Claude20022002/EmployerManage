@@ -77,6 +77,7 @@ La demande de congé peut être initiée « à tous les niveaux, de l'agent au d
 - Toute demande de congé passe par une validation serveur des règles métier (durée, justificatifs, chevauchement de dates) — ne jamais faire confiance à la seule validation frontend.
 - Traçabilité : chaque changement de statut d'une demande de congé doit être journalisé (qui, quand, quel statut avant/après) — nécessaire pour la fiabilité de l'attestation et pour un audit administratif.
 - Sécurité : application gouvernementale manipulant des données personnelles et médicales (rapports médicaux, certificats de grossesse) — traiter les fichiers uploadés et les champs médicaux avec le même niveau de rigueur que des données sensibles (contrôle d'accès strict par rôle, pas d'exposition dans des logs, stockage des fichiers hors webroot public).
+  - **Écart connu (dev only)** : `config/urls.py` sert `MEDIA_ROOT` via `django.conf.urls.static` quand `DEBUG=True`, ce qui expose les justificatifs/attestations sans contrôle d'accès. Ne jamais déployer ça tel quel : en production, servir ces fichiers via une vue Django authentifiée (ex. `X-Accel-Redirect`/`X-Sendfile`) qui vérifie `est_implique()` avant de renvoyer le fichier.
 
 ## Documentation
 

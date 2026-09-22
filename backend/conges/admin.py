@@ -4,11 +4,18 @@ from .models import (
     Attestation,
     DemandeConge,
     EtapeValidation,
+    JourFerie,
     JustificatifDemande,
     TypeConge,
     TypeCongeJustificatifRequis,
     TypeJustificatif,
 )
+
+
+@admin.register(JourFerie)
+class JourFerieAdmin(admin.ModelAdmin):
+    list_display = ("date", "libelle")
+    ordering = ("date",)
 
 
 class JustificatifRequisInline(admin.TabularInline):

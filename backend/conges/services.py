@@ -73,18 +73,21 @@ def construire_circuit_validation(demande) -> list[EtapeValidation]:
 
 def nombre_jours(date_debut: datetime.date, date_fin: datetime.date, jours_ouvrables_uniquement: bool) -> int:
     """
-    Nombre de jours de la période, bornes incluses. En mode "jours ouvrables", exclut seulement
-    les week-ends : aucun calendrier des jours fériés guinéens n'est modélisé pour l'instant
-    (voir CLAUDE.md — à confirmer avec le client métier avant d'en coder un).
+    Nombre de jours de la période, bornes incluses. En mode "jours ouvrables", exclut les
+    week-ends et les jours fériés déclarés dans JourFerie (voir ce modèle : les fêtes à date
+    fixe peuvent être saisies à l'avance, les fêtes mobiles doivent être ajoutées chaque année).
     """
     if date_fin < date_debut:
         raise ValidationError("La date de fin ne peut pas précéder la date de début.")
     if not jours_ouvrables_uniquement:
         return (date_fin - date_debut).days + 1
+    jours_feries = set(
+        JourFerie.objects.filter(date__gte=date_debut, date__lte=date_fin).values_list("date", flat=True)
+    )
     jours = 0
     jour = date_debut
     while jour <= date_fin:
-        if jour.weekday() < 5:  # 0=lundi ... 4=vendredi
+        if jour.weekday() < 5 and jour not in jours_feries:  # 0=lundi ... 4=vendredi
             jours += 1
         jour += datetime.timedelta(days=1)
     return jours

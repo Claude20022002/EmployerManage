@@ -17,11 +17,20 @@ export interface Utilisateur {
   is_staff: boolean
 }
 
+export interface Direction {
+  id: number
+  nom: string
+  directeur: number | null
+  directeur_nom: string | null
+}
+
 export interface Service {
   id: number
   nom: string
   direction: number
   direction_nom: string
+  chef_service: number | null
+  chef_service_nom: string | null
 }
 
 export interface TypeJustificatif {

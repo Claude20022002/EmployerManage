@@ -1,13 +1,8 @@
 import { client } from './client'
-import type { RoleHierarchique, Service, Utilisateur } from '../types'
+import type { RoleHierarchique, Utilisateur } from '../types'
 
 export async function listerAgents(): Promise<Utilisateur[]> {
   const { data } = await client.get('/auth/agents/')
-  return data
-}
-
-export async function listerServices(): Promise<Service[]> {
-  const { data } = await client.get('/auth/services/')
   return data
 }
 

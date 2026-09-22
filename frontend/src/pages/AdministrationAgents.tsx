@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { creerAgent, listerAgents, listerServices, type AgentCree } from '../api/administration'
+import { creerAgent, listerAgents, type AgentCree } from '../api/administration'
+import { listerServices } from '../api/organisation'
 import { useAuth } from '../context/AuthContext'
 import type { RoleHierarchique, Service, Utilisateur } from '../types'
 

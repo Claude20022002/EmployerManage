@@ -42,11 +42,18 @@ class TypeCongeSerializer(serializers.ModelSerializer):
 
 class JustificatifDemandeSerializer(serializers.ModelSerializer):
     type_justificatif_libelle = serializers.CharField(source="type_justificatif.libelle", read_only=True)
+    fichier_url = serializers.SerializerMethodField()
 
     class Meta:
         model = JustificatifDemande
-        fields = ["id", "type_justificatif", "type_justificatif_libelle", "fichier", "depose_le"]
+        fields = ["id", "type_justificatif", "type_justificatif_libelle", "fichier", "fichier_url", "depose_le"]
         read_only_fields = ["depose_le"]
+        extra_kwargs = {"fichier": {"write_only": True}}
+
+    def get_fichier_url(self, obj):
+        if not obj.demande_id:
+            return None
+        return f"/api/demandes/{obj.demande_id}/justificatifs/{obj.id}/fichier/"
 
 
 class EtapeValidationSerializer(serializers.ModelSerializer):
@@ -68,10 +75,15 @@ class EtapeValidationSerializer(serializers.ModelSerializer):
 
 
 class AttestationSerializer(serializers.ModelSerializer):
+    fichier_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Attestation
-        fields = ["numero_serie", "fichier_pdf", "generee_le"]
+        fields = ["numero_serie", "fichier_url", "generee_le"]
         read_only_fields = fields
+
+    def get_fichier_url(self, obj):
+        return f"/api/demandes/{obj.demande_id}/attestation/fichier/"
 
 
 class DemandeCongeListSerializer(serializers.ModelSerializer):

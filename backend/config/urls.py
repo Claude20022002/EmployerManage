@@ -1,5 +1,3 @@
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.decorators import api_view, permission_classes
@@ -20,5 +18,7 @@ urlpatterns = [
     path("api/", include("conges.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Les justificatifs/attestations (MEDIA_ROOT) ne sont volontairement PAS servis en statique ici,
+# même en dev : ce sont des documents sensibles (rapports médicaux…). Ils passent uniquement par
+# les vues authentifiées de conges/views.py (fichier_justificatif, fichier_attestation), qui
+# vérifient est_implique() avant de streamer le fichier.

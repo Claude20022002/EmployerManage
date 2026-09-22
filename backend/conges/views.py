@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import FileResponse, Http404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -82,6 +83,24 @@ class DemandeCongeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         justificatif = JustificatifDemande.objects.create(demande=demande, **serializer.validated_data)
         return Response(JustificatifDemandeSerializer(justificatif).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"], url_path=r"justificatifs/(?P<justificatif_id>\d+)/fichier")
+    def fichier_justificatif(self, request, pk=None, justificatif_id=None):
+        demande = self.get_object()  # lève 403 si l'utilisateur n'est pas impliqué dans cette demande
+        justificatif = demande.justificatifs.filter(id=justificatif_id).first()
+        if justificatif is None or not justificatif.fichier:
+            raise Http404
+        return FileResponse(justificatif.fichier.open("rb"), filename=justificatif.fichier.name.rsplit("/", 1)[-1])
+
+    @action(detail=True, methods=["get"], url_path="attestation/fichier")
+    def fichier_attestation(self, request, pk=None):
+        demande = self.get_object()
+        attestation = getattr(demande, "attestation", None)
+        if attestation is None or not attestation.fichier_pdf:
+            raise Http404
+        return FileResponse(
+            attestation.fichier_pdf.open("rb"), filename=attestation.fichier_pdf.name.rsplit("/", 1)[-1]
+        )
 
     @action(detail=True, methods=["post"], url_path="soumettre")
     def soumettre(self, request, pk=None):

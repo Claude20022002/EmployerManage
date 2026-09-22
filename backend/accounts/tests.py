@@ -94,3 +94,43 @@ class CreationAgentTests(APITestCase):
         response = self.client.get("/api/auth/agents/")
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.data), 1)
+
+
+class GestionOrganisationTests(APITestCase):
+    def setUp(self):
+        self.rh = User.objects.create_user(
+            username="RH001", matricule="RH001", email="rh001@mefb.gouv.gn",
+            first_name="Mariame", last_name="Kaba", password="motdepasse123", is_staff=True,
+        )
+        self.agent = User.objects.create_user(
+            username="AG001", matricule="AG001", email="ag001@mefb.gouv.gn",
+            first_name="Ibrahima", last_name="Sylla", password="motdepasse123",
+        )
+
+    def _connecter(self, matricule):
+        response = self.client.post("/api/auth/connexion/", {"matricule": matricule, "mot_de_passe": "motdepasse123"})
+        self.assertEqual(response.status_code, 200, response.data)
+
+    def test_rh_peut_creer_une_direction_puis_un_service(self):
+        self._connecter("RH001")
+
+        response = self.client.post("/api/auth/directions/", {"nom": "Direction du Budget"})
+        self.assertEqual(response.status_code, 201, response.data)
+        direction_id = response.data["id"]
+
+        response = self.client.post(
+            "/api/auth/services/", {"nom": "Service Solde", "direction": direction_id}
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["direction_nom"], "Direction du Budget")
+
+        response = self.client.patch(f"/api/auth/directions/{direction_id}/", {"directeur": self.agent.id})
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["directeur"], self.agent.id)
+
+    def test_un_agent_non_staff_ne_peut_pas_gerer_lorganisation(self):
+        self._connecter("AG001")
+        response = self.client.post("/api/auth/directions/", {"nom": "Direction Test"})
+        self.assertEqual(response.status_code, 403)
+        response = self.client.get("/api/auth/directions/")
+        self.assertEqual(response.status_code, 403)

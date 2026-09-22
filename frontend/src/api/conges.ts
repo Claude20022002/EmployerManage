@@ -34,6 +34,11 @@ export async function soumettreDemande(demandeId: number): Promise<DemandeCongeD
   return data
 }
 
+export async function annulerDemande(demandeId: number): Promise<DemandeCongeDetail> {
+  const { data } = await client.post(`/demandes/${demandeId}/annuler/`)
+  return data
+}
+
 export async function mesDemandes(): Promise<DemandeCongeListe[]> {
   const { data } = await client.get('/demandes/')
   return data

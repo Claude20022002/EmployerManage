@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { approuverEtape, obtenirDemande, rejeterEtape } from '../api/conges'
+import { annulerDemande, approuverEtape, obtenirDemande, rejeterEtape } from '../api/conges'
 import { EtapesTimeline } from '../components/EtapesTimeline'
 import { StatutBadge } from '../components/StatutBadge'
 import { useAuth } from '../context/AuthContext'
@@ -36,6 +36,24 @@ export function DemandeDetail() {
   const etapeCourante = demande.etapes.find((e) => e.decision === 'EN_ATTENTE')
   const jePeuxDecider =
     demande.statut === 'EN_COURS' && etapeCourante && utilisateur && etapeCourante.validateur.id === utilisateur.id
+  const jePeuxAnnuler =
+    utilisateur &&
+    demande.agent.id === utilisateur.id &&
+    (demande.statut === 'BROUILLON' || demande.statut === 'EN_COURS')
+
+  async function annuler() {
+    if (!id) return
+    if (!window.confirm('Confirmer l\'annulation de cette demande de congé ?')) return
+    setErreur(null)
+    setEnvoi(true)
+    try {
+      setDemande(await annulerDemande(Number(id)))
+    } catch (err) {
+      setErreur(extraireErreur(err))
+    } finally {
+      setEnvoi(false)
+    }
+  }
 
   async function decider(approuver: boolean) {
     if (!etapeCourante || !id) return
@@ -77,8 +95,21 @@ export function DemandeDetail() {
         </p>
       </div>
 
+      {erreur && !jePeuxDecider && <div className="erreur">{erreur}</div>}
+
       <div className="carte">
         <h2>Détails</h2>
+        {jePeuxAnnuler && (
+          <button
+            type="button"
+            className="bouton bouton-discret"
+            onClick={annuler}
+            disabled={envoi}
+            style={{ float: 'right' }}
+          >
+            Annuler ma demande
+          </button>
+        )}
         <p>
           Période demandée : {new Date(demande.date_debut).toLocaleDateString('fr-FR')} →{' '}
           {new Date(demande.date_fin_demandee).toLocaleDateString('fr-FR')}

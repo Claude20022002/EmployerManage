@@ -86,10 +86,15 @@ test('parcours critique complet : demande -> 3 niveaux d\'approbation -> attesta
   await expect(page.getByText('Approuvée').first()).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Attestation' })).toBeVisible()
   await expect(page.getByText(/Numéro de série/)).toBeVisible()
-  await expect(page.getByRole('link', { name: "Télécharger l'attestation (PDF)" })).toHaveAttribute(
-    'href',
-    /\.pdf$/,
-  )
+
+  const lienAttestation = page.getByRole('link', { name: "Télécharger l'attestation (PDF)" })
+  const hrefAttestation = await lienAttestation.getAttribute('href')
+  expect(hrefAttestation).toMatch(/\/attestation\/fichier\/$/)
+  // Le fichier est servi par une vue authentifiée (pas de static() public) : on vérifie qu'elle
+  // répond bien un vrai PDF pour un utilisateur connecté, pas juste que le lien existe.
+  const reponseAttestation = await page.request.get(hrefAttestation!)
+  expect(reponseAttestation.ok()).toBeTruthy()
+  expect(reponseAttestation.headers()['content-type']).toContain('pdf')
 
   // 5. L'agent voit sa demande approuvée avec l'attestation disponible
   await deconnecter(page)

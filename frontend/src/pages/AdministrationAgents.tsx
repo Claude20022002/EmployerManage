@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Navigate } from 'react-router-dom'
 import { creerAgent, listerAgents, listerServices, type AgentCree } from '../api/administration'
+import { useAuth } from '../context/AuthContext'
 import type { RoleHierarchique, Service, Utilisateur } from '../types'
 
 const ROLES: { valeur: RoleHierarchique; libelle: string }[] = [
@@ -20,6 +22,7 @@ function extraireErreur(err: any): string {
 }
 
 export function AdministrationAgents() {
+  const { utilisateur } = useAuth()
   const [agents, setAgents] = useState<Utilisateur[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [matricule, setMatricule] = useState('')
@@ -37,9 +40,10 @@ export function AdministrationAgents() {
   }
 
   useEffect(() => {
+    if (!utilisateur?.is_staff) return
     chargerAgents()
     listerServices().then(setServices)
-  }, [])
+  }, [utilisateur])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

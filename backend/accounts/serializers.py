@@ -2,15 +2,30 @@ import secrets
 
 from rest_framework import serializers
 
-from .models import Service, User
+from .models import Direction, Service, User
+
+
+class DirectionSerializer(serializers.ModelSerializer):
+    directeur_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Direction
+        fields = ["id", "nom", "directeur", "directeur_nom"]
+
+    def get_directeur_nom(self, obj):
+        return f"{obj.directeur.first_name} {obj.directeur.last_name}" if obj.directeur else None
 
 
 class ServiceSerializer(serializers.ModelSerializer):
     direction_nom = serializers.CharField(source="direction.nom", read_only=True)
+    chef_service_nom = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
-        fields = ["id", "nom", "direction", "direction_nom"]
+        fields = ["id", "nom", "direction", "direction_nom", "chef_service", "chef_service_nom"]
+
+    def get_chef_service_nom(self, obj):
+        return f"{obj.chef_service.first_name} {obj.chef_service.last_name}" if obj.chef_service else None
 
 
 class UserSerializer(serializers.ModelSerializer):

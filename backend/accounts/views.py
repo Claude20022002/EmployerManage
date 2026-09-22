@@ -6,8 +6,14 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Service, User
-from .serializers import ChangerMotDePasseSerializer, CreerAgentSerializer, ServiceSerializer, UserSerializer
+from .models import Direction, Service, User
+from .serializers import (
+    ChangerMotDePasseSerializer,
+    CreerAgentSerializer,
+    DirectionSerializer,
+    ServiceSerializer,
+    UserSerializer,
+)
 
 
 @api_view(["GET"])
@@ -79,8 +85,19 @@ class AgentAdminViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
         return Response(data, status=status.HTTP_201_CREATED)
 
 
-class ServiceListView(APIView):
-    permission_classes = [IsAdminUser]
+class DirectionViewSet(viewsets.ModelViewSet):
+    """Réservé au personnel RH — gestion des directions du ministère."""
 
-    def get(self, request):
-        return Response(ServiceSerializer(Service.objects.select_related("direction").all(), many=True).data)
+    permission_classes = [IsAdminUser]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    serializer_class = DirectionSerializer
+    queryset = Direction.objects.select_related("directeur").order_by("nom")
+
+
+class ServiceViewSet(viewsets.ModelViewSet):
+    """Réservé au personnel RH — gestion des services rattachés à une direction."""
+
+    permission_classes = [IsAdminUser]
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    serializer_class = ServiceSerializer
+    queryset = Service.objects.select_related("direction", "chef_service").order_by("nom")

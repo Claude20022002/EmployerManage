@@ -160,3 +160,27 @@ test("le personnel RH peut créer un compte agent avec un mot de passe temporair
   await expect(page.getByText('Mot de passe temporaire')).toBeVisible()
   await expect(page.getByText(matricule, { exact: false }).first()).toBeVisible()
 })
+
+test("un agent peut annuler sa propre demande avant décision finale", async ({ page }) => {
+  page.on('dialog', (d) => d.accept())
+
+  await connecter(page, 'AG001')
+  await page.getByRole('link', { name: 'Nouvelle demande' }).click()
+  await page.getByLabel('Type de congé').selectOption({ label: 'Congé exceptionnel' })
+
+  const debut = new Date()
+  debut.setDate(debut.getDate() + 60)
+  const fin = new Date(debut)
+  fin.setDate(fin.getDate() + 1)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  await page.getByLabel('Date de début').fill(fmt(debut))
+  await page.getByLabel('Date de fin souhaitée').fill(fmt(fin))
+  await page.getByRole('button', { name: 'Continuer' }).click()
+  await page.getByRole('button', { name: 'Soumettre la demande' }).click()
+
+  await page.getByRole('link', { name: 'Voir' }).first().click()
+  await page.getByRole('button', { name: 'Annuler ma demande' }).click()
+
+  await expect(page.getByText('Annulée').first()).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Annuler ma demande' })).toHaveCount(0)
+})

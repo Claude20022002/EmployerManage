@@ -74,6 +74,8 @@ export function AdministrationAgents() {
     }
   }
 
+  if (!utilisateur?.is_staff) return <Navigate to="/mes-demandes" replace />
+
   return (
     <>
       <div className="entete-page">

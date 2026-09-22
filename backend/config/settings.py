@@ -109,3 +109,9 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
 )
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost:5173"])
+
+# Attestations
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+ATTESTATION_SECRET_KEY = env("ATTESTATION_SECRET_KEY", default=SECRET_KEY)

@@ -1,9 +1,11 @@
+import datetime
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from accounts.models import Direction, RoleHierarchique, Service, User
-from conges.models import StatutDemande, TypeConge
-from conges.services import construire_circuit_validation
+from conges.models import JourFerie, StatutDemande, TypeConge
+from conges.services import construire_circuit_validation, nombre_jours
 
 
 def _make_user(matricule, role, service=None, **kwargs):
@@ -90,3 +92,24 @@ class CircuitValidationTests(TestCase):
         demande = self._demande(self.chef_cabinet)
         with self.assertRaises(ValidationError):
             construire_circuit_validation(demande)
+
+
+class NombreJoursTests(TestCase):
+    def test_jours_ouvrables_exclut_week_ends(self):
+        # Lundi 2027-03-01 -> vendredi 2027-03-05 : 5 jours ouvrables, aucun week-end dedans.
+        self.assertEqual(nombre_jours(datetime.date(2027, 3, 1), datetime.date(2027, 3, 5), True), 5)
+
+    def test_jours_ouvrables_exclut_un_jour_ferie_declare(self):
+        # Même semaine, mais le mercredi est déclaré férié : 4 jours ouvrables au lieu de 5.
+        JourFerie.objects.create(date=datetime.date(2027, 3, 3), libelle="Test")
+        self.assertEqual(nombre_jours(datetime.date(2027, 3, 1), datetime.date(2027, 3, 5), True), 4)
+
+    def test_jour_ferie_tombant_un_week_end_ne_compte_pas_deux_fois(self):
+        # Un jour férié un samedi ne doit pas faire descendre le compte sous le nombre de jours
+        # ouvrables réels de la période.
+        JourFerie.objects.create(date=datetime.date(2027, 3, 6), libelle="Test (samedi)")  # samedi
+        self.assertEqual(nombre_jours(datetime.date(2027, 3, 1), datetime.date(2027, 3, 5), True), 5)
+
+    def test_jours_calendaires_ignore_jours_feries(self):
+        JourFerie.objects.create(date=datetime.date(2027, 3, 3), libelle="Test")
+        self.assertEqual(nombre_jours(datetime.date(2027, 3, 1), datetime.date(2027, 3, 5), False), 5)

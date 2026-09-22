@@ -1,7 +1,9 @@
+import datetime
+
 from django.core.management.base import BaseCommand
 
 from accounts.models import Direction, RoleHierarchique, Service, User
-from conges.models import TypeConge, TypeCongeJustificatifRequis, TypeJustificatif
+from conges.models import JourFerie, TypeConge, TypeCongeJustificatifRequis, TypeJustificatif
 
 MOT_DE_PASSE_DEMO = "Demo1234!"
 
@@ -70,6 +72,25 @@ class Command(BaseCommand):
             for jcode in justificatifs:
                 TypeCongeJustificatifRequis.objects.get_or_create(
                     type_conge=type_conge, type_justificatif=TypeJustificatif.objects.get(code=jcode)
+                )
+
+        # Jours fériés guinéens à date fixe uniquement (faits civiques non controversés : Jour de
+        # l'An, Fête du Travail, Indépendance, Noël). Les fêtes musulmanes (Tabaski, Maouloud, fin
+        # du Ramadan...), très probablement majoritaires dans le calendrier réel guinéen vu la
+        # démographie du pays, suivent le calendrier lunaire et NE SONT PAS incluses ici — à
+        # ajouter chaque année via l'admin ou l'API, jamais devinées (voir CLAUDE.md et
+        # conges/models.py::JourFerie). Cette liste est donc un point de départ, pas un calendrier
+        # complet.
+        annee = datetime.date.today().year
+        for mois_jour, libelle in [
+            ((1, 1), "Jour de l'An"),
+            ((5, 1), "Fête du Travail"),
+            ((10, 2), "Anniversaire de l'Indépendance"),
+            ((12, 25), "Noël"),
+        ]:
+            for a in (annee, annee + 1):
+                JourFerie.objects.get_or_create(
+                    date=datetime.date(a, *mois_jour), defaults={"libelle": libelle}
                 )
 
         self.stdout.write(self.style.SUCCESS("Données de démonstration créées."))

@@ -1,0 +1,64 @@
+# Démonstration de stack conteneurisée complète (backend + frontend + PostgreSQL).
+# Pas un déploiement production clé en main : pas de TLS/reverse proxy devant, pas de sauvegarde
+# PostgreSQL configurée — voir docs/03-architecture.md, section "ce qui n'existe pas encore".
+#
+# Utilisation :
+#   docker compose -f docker-compose.prod.yml --env-file backend/.env up -d --build
+#
+# Le .env du backend (voir backend/.env.example) doit définir DJANGO_SECRET_KEY,
+# ATTESTATION_SECRET_KEY et DEBUG=False avant tout usage réel.
+#
+# `name:` ci-dessous est volontaire : sans lui, Docker Compose nomme le projet d'après le
+# dossier courant, IDENTIQUE à celui de docker-compose.yml (postgres de dev) — lancer ce fichier
+# recréerait alors le conteneur postgres de dev avec un autre volume, détachant vos données
+# locales sans les supprimer (elles restent dans le volume `employermanage_postgres-data`, juste
+# débranché). Vécu une fois pendant le développement de ce projet — d'où ce commentaire.
+name: employermanage-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: employermanage
+      POSTGRES_USER: employermanage
+      POSTGRES_PASSWORD: employermanage
+    volumes:
+      - postgres-data-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U employermanage"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://employermanage:employermanage@postgres:5432/employermanage
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY doit être défini}
+      ATTESTATION_SECRET_KEY: ${ATTESTATION_SECRET_KEY:?ATTESTATION_SECRET_KEY doit être défini}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    volumes:
+      - backend-media:/app/media
+    ports:
+      - "8001:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8001/api}
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres-data-prod:
+  backend-media:

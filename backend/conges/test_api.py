@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
@@ -24,6 +25,7 @@ class ParcoursCompletDemandeCongeTests(APITestCase):
     """Parcours critique : connexion -> soumission -> 3 niveaux d'approbation -> attestation."""
 
     def setUp(self):
+        cache.clear()
         self.direction = Direction.objects.create(nom="Direction du Budget")
         self.service = Service.objects.create(nom="Service Solde", direction=self.direction)
 

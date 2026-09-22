@@ -118,6 +118,14 @@ Système de design propre (`index.css` + `App.css`), pas de librairie de composa
 
 Variables d'environnement (`.env`, jamais commité — voir `.env.example` dans `backend/` et `frontend/`) : `DATABASE_URL`, `DJANGO_SECRET_KEY`, `ATTESTATION_SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `FRONTEND_URL`, `VITE_API_URL`. Aucun profil de configuration production n'existe encore (`DEBUG=True` par défaut, clés par défaut non sécurisées) — voir docs/02 (besoins non fonctionnels, à rédiger) pour le cadrage du déploiement.
 
+## Durcissement production (2026-09-22)
+
+- **Fichiers sensibles** : les justificatifs et l'attestation ne sont plus jamais servis en statique — `conges/views.py::fichier_justificatif` / `fichier_attestation` vérifient `est_implique()` avant de streamer le fichier (`FileResponse`). `config/urls.py` ne monte plus `MEDIA_ROOT`, même en dev.
+- **Réglages sécurité conditionnels à `DEBUG=False`** (`config/settings.py`) : `SECURE_SSL_REDIRECT`, cookies `Secure`, HSTS, `X_FRAME_OPTIONS`. `DJANGO_SECRET_KEY` par défaut interdit dès que `DEBUG=False` (le démarrage échoue explicitement plutôt que de tourner avec une clé connue).
+- **Anti-bruteforce** sur `/api/auth/connexion/` (`ConnexionView`, `ScopedRateThrottle`, scope `connexion`, taux réglable via `THROTTLE_CONNEXION`).
+- **Conteneurisation** : `backend/Dockerfile` (gunicorn), `frontend/Dockerfile` (build Vite → nginx avec fallback SPA), `docker-compose.prod.yml` pour la stack complète. **Testé réellement** (build des deux images + `docker compose up` + vérification que l'API répond) — pas juste écrit.
+- **CI** (`.github/workflows/ci.yml`) : trois jobs — tests backend, build frontend, et un job e2e complet (Postgres de service + backend Django réel + Vite + Playwright). Écrite et validée syntaxiquement, mais pas encore exécutée sur GitHub Actions au moment de la rédaction (dépend du prochain push).
+
 ## Ce qui n'existe pas encore
 
-Pour ne pas laisser croire que l'architecture est complète : pas de conteneurisation du backend/frontend eux-mêmes (seul PostgreSQL est dockerisé), pas de CI, pas d'annulation de demande par l'agent, pas d'envoi d'email/notification, pas de gestion des directions/services depuis l'interface (admin Django uniquement), pas de calendrier des jours fériés.
+Pour ne pas laisser croire que l'architecture est complète : pas d'envoi d'email/notification (le mot de passe temporaire d'un nouvel agent est affiché à l'écran RH, pas envoyé), pas de calendrier des jours fériés guinéens, pas de reverse proxy/TLS devant `docker-compose.prod.yml`, pas de sauvegarde PostgreSQL automatisée, pas de séparation dev/staging/prod au-delà du flag `DEBUG`.

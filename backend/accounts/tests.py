@@ -1,10 +1,15 @@
+from unittest import mock
+
+from django.core.cache import cache
 from rest_framework.test import APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import Direction, RoleHierarchique, Service, User
 
 
 class CreationAgentTests(APITestCase):
     def setUp(self):
+        cache.clear()  # le throttle de connexion (settings.py) partage un cache entre les tests
         self.direction = Direction.objects.create(nom="Direction du Budget")
         self.service = Service.objects.create(nom="Service Solde", direction=self.direction)
         self.rh = User.objects.create_user(
@@ -98,6 +103,7 @@ class CreationAgentTests(APITestCase):
 
 class GestionOrganisationTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.rh = User.objects.create_user(
             username="RH001", matricule="RH001", email="rh001@mefb.gouv.gn",
             first_name="Mariame", last_name="Kaba", password="motdepasse123", is_staff=True,
@@ -134,3 +140,31 @@ class GestionOrganisationTests(APITestCase):
         self.assertEqual(response.status_code, 403)
         response = self.client.get("/api/auth/directions/")
         self.assertEqual(response.status_code, 403)
+
+
+class ThrottlingConnexionTests(APITestCase):
+    """Anti-bruteforce sur /api/auth/connexion/ — voir settings.py DEFAULT_THROTTLE_RATES."""
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user(
+            username="AG001", matricule="AG001", email="ag001@mefb.gouv.gn",
+            first_name="Ibrahima", last_name="Sylla", password="motdepasse123",
+        )
+
+    def test_trop_de_tentatives_declenche_le_throttle(self):
+        # ScopedRateThrottle.THROTTLE_RATES est un attribut de classe figé au chargement du module
+        # (ScopedRateThrottle.__init__ est un no-op) : @override_settings(REST_FRAMEWORK=...) ne le
+        # rafraîchit pas. On monkey-patch directement l'attribut pour tester le seuil sans dépendre
+        # du THROTTLE_CONNEXION réel de l'environnement (permissif en dev, voir .env).
+        with mock.patch.object(ScopedRateThrottle, "THROTTLE_RATES", {"connexion": "3/min"}):
+            for _ in range(3):
+                response = self.client.post(
+                    "/api/auth/connexion/", {"matricule": "AG001", "mot_de_passe": "mauvais-mot-de-passe"}
+                )
+                self.assertEqual(response.status_code, 401)
+
+            response = self.client.post(
+                "/api/auth/connexion/", {"matricule": "AG001", "mot_de_passe": "motdepasse123"}
+            )
+            self.assertEqual(response.status_code, 429)

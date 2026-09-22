@@ -19,7 +19,7 @@ L'application manipule des données médicales (rapports médicaux, certificats 
 
 ## Disponibilité et hébergement
 
-- Aucune cible d'hébergement n'est fixée (Guinée, aucun fournisseur cloud choisi). `docker-compose.prod.yml` fournit une stack conteneurisée de démonstration, pas une infrastructure de production (pas de TLS/reverse proxy, pas de sauvegarde automatisée, pas de plan de reprise après sinistre).
+- Aucune cible d'hébergement n'est fixée (Guinée, aucun fournisseur cloud choisi). `docker-compose.prod.yml` fournit une stack conteneurisée de démonstration — reverse proxy TLS et sauvegarde PostgreSQL automatisée existent et sont testés (voir docs/03), mais ce n'est toujours pas une infrastructure de production réelle : pas de renouvellement automatique de certificat, sauvegardes stockées localement uniquement (pas de copie distante), pas de plan de reprise après sinistre formalisé.
 - Aucun objectif de disponibilité (SLA) n'a été fixé par le client métier.
 
 ## Performance et volumétrie

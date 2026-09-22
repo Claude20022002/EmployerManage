@@ -1,3 +1,4 @@
+from django.core import mail
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
@@ -199,3 +200,71 @@ class ParcoursCompletDemandeCongeTests(APITestCase):
         self._connecter("CS001")
         response = self.client.post(f"/api/demandes/{demande_id}/annuler/")
         self.assertEqual(response.status_code, 403)
+
+    def test_notifications_email_au_fil_du_circuit(self):
+        self._connecter("AG001")
+        response = self.client.post(
+            "/api/demandes/",
+            {"type_conge": self.type_conge.id, "date_debut": "2027-05-01", "date_fin_demandee": "2027-05-05"},
+        )
+        demande_id = response.data["id"]
+        fichier = SimpleUploadedFile("rapport.pdf", b"contenu-pdf", content_type="application/pdf")
+        self.client.post(
+            f"/api/demandes/{demande_id}/justificatifs/",
+            {"type_justificatif": self.rapport_medical.id, "fichier": fichier},
+            format="multipart",
+        )
+
+        mail.outbox.clear()
+        response = self.client.post(f"/api/demandes/{demande_id}/soumettre/")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.chef_service.email])
+        etape_cs = response.data["etapes"][0]["id"]
+        etape_dir = response.data["etapes"][1]["id"]
+        etape_cab = response.data["etapes"][2]["id"]
+
+        self.client.logout()
+        self._connecter("CS001")
+        mail.outbox.clear()
+        self.client.post(f"/api/demandes/{demande_id}/etapes/{etape_cs}/approuver/", {"commentaire": "OK"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.directeur.email])
+
+        self.client.logout()
+        self._connecter("DIR001")
+        mail.outbox.clear()
+        self.client.post(f"/api/demandes/{demande_id}/etapes/{etape_dir}/approuver/", {"commentaire": "OK"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.chef_cabinet.email])
+
+        self.client.logout()
+        self._connecter("CC001")
+        mail.outbox.clear()
+        self.client.post(f"/api/demandes/{demande_id}/etapes/{etape_cab}/approuver/", {"commentaire": "OK"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.agent.email])
+        self.assertIn("approuvée", mail.outbox[0].subject)
+
+    def test_notification_email_de_rejet(self):
+        self._connecter("AG001")
+        response = self.client.post(
+            "/api/demandes/",
+            {"type_conge": self.type_conge.id, "date_debut": "2027-05-01", "date_fin_demandee": "2027-05-05"},
+        )
+        demande_id = response.data["id"]
+        fichier = SimpleUploadedFile("rapport.pdf", b"contenu-pdf", content_type="application/pdf")
+        self.client.post(
+            f"/api/demandes/{demande_id}/justificatifs/",
+            {"type_justificatif": self.rapport_medical.id, "fichier": fichier},
+            format="multipart",
+        )
+        response = self.client.post(f"/api/demandes/{demande_id}/soumettre/")
+        etape_cs = response.data["etapes"][0]["id"]
+
+        self.client.logout()
+        self._connecter("CS001")
+        mail.outbox.clear()
+        self.client.post(f"/api/demandes/{demande_id}/etapes/{etape_cs}/rejeter/", {"commentaire": "Refusé"})
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.agent.email])
+        self.assertIn("rejetée", mail.outbox[0].subject)

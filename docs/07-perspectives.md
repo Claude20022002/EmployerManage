@@ -4,11 +4,13 @@
 
 ## Compléter le périmètre actuel
 
-- **Calendrier des jours fériés guinéens** dans le calcul des jours ouvrables (`conges/services.py::nombre_jours` n'exclut que les week-ends aujourd'hui).
-- **Notifications** (email a minima) lors d'un changement de statut de demande et lors de la création d'un compte agent — actuellement tout est consulté en se connectant à l'application, rien n'est poussé.
+- **Compléter le calendrier des jours fériés** : `JourFerie` existe et est déjà pris en compte dans `nombre_jours`, mais seules les fêtes civiles à date fixe sont pré-remplies (voir docs/03) — les fêtes mobiles (Tabaski, Maouloud, fin du Ramadan...) doivent être ajoutées chaque année.
+- **Fournisseur SMTP réel** : les notifications email existent et sont testées (`conges/notifications.py`), mais tournent en mode console (rien n'est réellement envoyé) faute de fournisseur SMTP choisi.
 - **Gestion complète de l'organisation** : suppression/renommage de directions et services depuis l'interface (seules la création et l'assignation d'un directeur/chef de service existent).
 - **Historique des décisions RH** : qui a créé quel compte, quand — utile pour l'audit administratif, pas suivi pour l'instant au-delà des logs serveur bruts.
-- **Durcissement production réel** : reverse proxy/TLS devant `docker-compose.prod.yml`, sauvegarde PostgreSQL automatisée, hébergement choisi et testé en conditions réelles (actuellement une démonstration conteneurisée, pas une infrastructure de production).
+- **Renouvellement automatique du certificat TLS** (Let's Encrypt/certbot) — le reverse proxy existe et fonctionne (voir docs/03), mais le certificat doit être renouvelé manuellement.
+- **Sauvegardes vers un stockage distant** : le mécanisme de sauvegarde/restauration PostgreSQL existe et est testé, mais les fichiers restent sur la machine hôte — à copier vers un stockage externe (S3 ou autre) pour survivre à une perte de la machine.
+- **Hébergement réel** choisi et testé en conditions réelles (actuellement une démonstration conteneurisée locale, pas une infrastructure de production déployée).
 
 ## Extensions plausibles (à confirmer avec le client métier avant de s'engager)
 

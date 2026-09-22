@@ -126,6 +126,10 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
+    # Le TLS est terminé par le reverse proxy (voir proxy/nginx.conf) : Django reçoit du HTTP en
+    # interne et doit faire confiance à l'en-tête posé par le proxy pour savoir que la requête
+    # d'origine était bien en HTTPS (sinon SECURE_SSL_REDIRECT boucle indéfiniment).
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
@@ -136,3 +140,17 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localho
 # Attestations
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 ATTESTATION_SECRET_KEY = env("ATTESTATION_SECRET_KEY", default=SECRET_KEY)
+
+# Email — console en dev (affiché dans les logs, rien n'est réellement envoyé), SMTP en
+# production via les variables EMAIL_*. Aucun fournisseur SMTP n'est choisi/testé pour l'instant
+# (voir docs/07-perspectives.md).
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="conges@mefb.gouv.gn")

@@ -34,6 +34,16 @@ Journal de bord technique, tenu au fil du développement. Chaque entrée est un 
 
 **Enseignement** : `@override_settings` ne suffit pas toujours pour des bibliothèques tierces qui mettent en cache une valeur de configuration à l'import plutôt que de la relire dynamiquement. Vérifier le code source de la bibliothèque avant de supposer que le mécanisme standard de Django s'applique.
 
+## `pg_dump` sans `--clean` produisait des sauvegardes impossibles à restaurer telles quelles
+
+**Symptôme** : en testant réellement le cycle sauvegarde → restauration (`backup/sauvegarder.sh` puis `backup/restaurer.sh`), la restauration échouait avec des dizaines d'erreurs `relation "..." already exists` / `duplicate key value`.
+
+**Cause** : `pg_dump` sans option produit un script qui *crée* les tables — il suppose une base cible vide. Restaurer ce dump sur une base déjà peuplée (le cas réaliste d'un test de restauration, ou d'une restauration partielle) échoue immédiatement.
+
+**Correction** : ajout de `--clean --if-exists` à `pg_dump` dans `backup/sauvegarder.sh` — le dump inclut alors les `DROP ... IF EXISTS` nécessaires pour pouvoir être rejoué sur une base déjà peuplée sans erreur. Revérifié : cycle complet sauvegarde → restauration sans aucune erreur après correction.
+
+**Enseignement** : une sauvegarde qui n'a jamais été restaurée n'est pas vérifiée. Le test de restauration (pas seulement de sauvegarde) a immédiatement révélé un problème qu'une simple vérification "le fichier .sql.gz existe" aurait manqué.
+
 ## Port 8000 déjà occupé par un autre projet Docker sur la machine de développement
 
 **Symptôme** : `curl http://127.0.0.1:8000/api/health/` renvoyait `{"detail":"Not Found"}` — une réponse JSON qui ressemblait à celle de l'API mais n'en était pas une.

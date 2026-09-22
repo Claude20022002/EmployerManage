@@ -15,6 +15,7 @@ from accounts.models import RoleHierarchique, User
 
 from .attestation import generer_attestation
 from .models import DecisionEtape, DemandeConge, EtapeValidation, JourFerie, StatutDemande
+from .notifications import notifier_approbation_finale, notifier_nouvelle_etape, notifier_rejet
 
 
 def _trouver_chef_cabinet() -> User:
@@ -134,7 +135,8 @@ def soumettre_demande(demande) -> DemandeConge:
     demande.statut = StatutDemande.EN_COURS
     demande.soumise_le = timezone.now()
     demande.save()
-    construire_circuit_validation(demande)
+    etapes = construire_circuit_validation(demande)
+    notifier_nouvelle_etape(etapes[0])
     return demande
 
 
@@ -158,10 +160,14 @@ def approuver_etape(etape: EtapeValidation, commentaire: str = "", duree_accorde
         demande.save()
     etape.save()
 
-    if etape_courante(demande) is None:
+    etape_suivante = etape_courante(demande)
+    if etape_suivante is None:
         demande.statut = StatutDemande.APPROUVEE
         demande.save()
         generer_attestation(demande)
+        notifier_approbation_finale(demande)
+    else:
+        notifier_nouvelle_etape(etape_suivante)
 
     return etape
 
@@ -180,6 +186,7 @@ def rejeter_etape(etape: EtapeValidation, commentaire: str):
 
     demande.statut = StatutDemande.REJETEE
     demande.save()
+    notifier_rejet(etape)
     return etape
 
 

@@ -1,9 +1,12 @@
-# Démonstration de stack conteneurisée complète (backend + frontend + PostgreSQL).
-# Pas un déploiement production clé en main : pas de TLS/reverse proxy devant, pas de sauvegarde
-# PostgreSQL configurée — voir docs/03-architecture.md, section "ce qui n'existe pas encore".
+# Démonstration de stack conteneurisée complète (backend + frontend + PostgreSQL + reverse proxy
+# TLS + sauvegardes). Toujours pas un déploiement production clé en main : pas de renouvellement
+# automatique de certificat, sauvegardes stockées localement uniquement (pas de copie vers un
+# stockage distant) — voir docs/03-architecture.md.
 #
 # Utilisation :
-#   docker compose -f docker-compose.prod.yml --env-file backend/.env up -d --build
+#   1. ./proxy/generer-certificat-autosigne.sh   (ou fournir de vrais certificats dans proxy/certs/)
+#   2. docker compose -f docker-compose.prod.yml --env-file backend/.env up -d --build
+#   3. https://localhost (avertissement navigateur attendu avec un certificat auto-signé)
 #
 # Le .env du backend (voir backend/.env.example) doit définir DJANGO_SECRET_KEY,
 # ATTESTATION_SECRET_KEY et DEBUG=False avant tout usage réel.
@@ -46,19 +49,45 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     volumes:
       - backend-media:/app/media
-    ports:
-      - "8001:8000"
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8001/api}
+        # Le frontend appelle l'API via le même domaine que la page (routé par le proxy en /api/) :
+        # pas besoin d'exposer un port backend séparé au navigateur.
+        VITE_API_URL: ${VITE_API_URL:-/api}
+
+  proxy:
+    image: nginx:1.27-alpine
     depends_on:
       - backend
+      - frontend
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./proxy/certs:/etc/nginx/certs:ro
     ports:
       - "80:80"
+      - "443:443"
+
+  backup:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: employermanage
+      POSTGRES_USER: employermanage
+      POSTGRES_PASSWORD: employermanage
+      BACKUP_INTERVAL_HEURES: ${BACKUP_INTERVAL_HEURES:-24}
+      BACKUP_RETENTION_JOURS: ${BACKUP_RETENTION_JOURS:-14}
+    volumes:
+      - ./backup:/scripts:ro
+      - backup-data:/backups
+    entrypoint: ["sh", "/scripts/sauvegarder.sh"]
 
 volumes:
   postgres-data-prod:
   backend-media:
+  backup-data:

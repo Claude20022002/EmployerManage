@@ -26,6 +26,9 @@ htmlcov/
 playwright-report/
 test-results/
 
+# Certificats TLS (auto-signés ou réels — jamais committés)
+/proxy/certs/*.pem
+
 # Editors / OS
 .vscode/
 .idea/

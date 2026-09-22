@@ -1,27 +1,35 @@
-import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+import { Layout } from './components/Layout'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { AuthProvider } from './context/AuthContext'
+import { AValider } from './pages/AValider'
+import { ChangerMotDePasse } from './pages/ChangerMotDePasse'
+import { Connexion } from './pages/Connexion'
+import { DemandeDetail } from './pages/DemandeDetail'
+import { MesDemandes } from './pages/MesDemandes'
+import { NouvelleDemande } from './pages/NouvelleDemande'
+import { VerificationPublique } from './pages/VerificationPublique'
 
 function App() {
-  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'error'>('checking')
-
-  useEffect(() => {
-    fetch(`${API_URL}/health/`)
-      .then((res) => (res.ok ? setApiStatus('ok') : setApiStatus('error')))
-      .catch(() => setApiStatus('error'))
-  }, [])
-
   return (
-    <main>
-      <h1>Gestion des congés — Ministère de l'Économie, des Finances et du Budget</h1>
-      <p>
-        API backend :{' '}
-        {apiStatus === 'checking' && 'vérification en cours…'}
-        {apiStatus === 'ok' && '✅ connectée'}
-        {apiStatus === 'error' && '❌ injoignable'}
-      </p>
-    </main>
+    <AuthProvider>
+      <Routes>
+        <Route path="/connexion" element={<Connexion />} />
+        <Route path="/verification/:numeroSerie" element={<VerificationPublique />} />
+        <Route path="/changer-mot-de-passe" element={<ChangerMotDePasse />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Navigate to="/mes-demandes" replace />} />
+            <Route path="/nouvelle-demande" element={<NouvelleDemande />} />
+            <Route path="/mes-demandes" element={<MesDemandes />} />
+            <Route path="/a-valider" element={<AValider />} />
+            <Route path="/demandes/:id" element={<DemandeDetail />} />
+          </Route>
+        </Route>
+      </Routes>
+    </AuthProvider>
   )
 }
 

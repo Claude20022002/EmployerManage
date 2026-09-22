@@ -14,6 +14,14 @@ export interface Utilisateur {
   role_hierarchique: RoleHierarchique
   service: number | null
   must_change_password: boolean
+  is_staff: boolean
+}
+
+export interface Service {
+  id: number
+  nom: string
+  direction: number
+  direction_nom: string
 }
 
 export interface TypeJustificatif {

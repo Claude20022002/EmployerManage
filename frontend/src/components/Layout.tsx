@@ -30,6 +30,11 @@ export function Layout() {
               À valider
             </NavLink>
           )}
+          {utilisateur?.is_staff && (
+            <NavLink to="/administration/agents" className={({ isActive }) => (isActive ? 'actif' : '')}>
+              Administration
+            </NavLink>
+          )}
         </nav>
         <div className="compte">
           {utilisateur && (

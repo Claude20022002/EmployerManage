@@ -10,7 +10,7 @@ router.register("directions", views.DirectionViewSet, basename="direction")
 
 urlpatterns = [
     path("csrf/", views.csrf, name="csrf"),
-    path("connexion/", views.connexion, name="connexion"),
+    path("connexion/", views.ConnexionView.as_view(), name="connexion"),
     path("deconnexion/", views.deconnexion, name="deconnexion"),
     path("moi/", views.MoiView.as_view(), name="moi"),
     path("changer-mot-de-passe/", views.ChangerMotDePasseView.as_view(), name="changer-mot-de-passe"),

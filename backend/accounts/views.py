@@ -4,6 +4,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .models import Direction, Service, User
@@ -23,25 +24,30 @@ def csrf(request):
     return Response({"csrfToken": get_token(request)})
 
 
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def connexion(request):
-    matricule = request.data.get("matricule")
-    mot_de_passe = request.data.get("mot_de_passe")
-    if not matricule or not mot_de_passe:
-        return Response({"detail": "Matricule et mot de passe requis."}, status=400)
+class ConnexionView(APIView):
+    """Classe (pas @api_view) pour pouvoir déclarer throttle_scope — anti-bruteforce, voir settings.py."""
 
-    try:
-        username = User.objects.get(matricule=matricule).username
-    except User.DoesNotExist:
-        return Response({"detail": "Identifiants invalides."}, status=401)
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "connexion"
 
-    user = authenticate(request, username=username, password=mot_de_passe)
-    if user is None:
-        return Response({"detail": "Identifiants invalides."}, status=401)
+    def post(self, request):
+        matricule = request.data.get("matricule")
+        mot_de_passe = request.data.get("mot_de_passe")
+        if not matricule or not mot_de_passe:
+            return Response({"detail": "Matricule et mot de passe requis."}, status=400)
 
-    login(request, user)
-    return Response(UserSerializer(user).data)
+        try:
+            username = User.objects.get(matricule=matricule).username
+        except User.DoesNotExist:
+            return Response({"detail": "Identifiants invalides."}, status=401)
+
+        user = authenticate(request, username=username, password=mot_de_passe)
+        if user is None:
+            return Response({"detail": "Identifiants invalides."}, status=401)
+
+        login(request, user)
+        return Response(UserSerializer(user).data)
 
 
 @api_view(["POST"])

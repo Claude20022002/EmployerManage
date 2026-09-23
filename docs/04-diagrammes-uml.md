@@ -1,6 +1,6 @@
 # Diagrammes UML
 
-Diagrammes en Mermaid (rendus nativement par GitHub). Reflètent le code réel au 2026-09-22 — voir [03-architecture.md](03-architecture.md) pour le contexte. À maintenir à jour si le modèle change ; un diagramme qui ment est pire que pas de diagramme.
+Diagrammes en Mermaid (rendus nativement par GitHub). Mis à jour le 2026-09-22 pour refléter l'annulation, le calendrier des jours fériés, les notifications et la gestion de l'organisation — la première version de ce document datait d'avant ces fonctionnalités et avait dérivé du code (le diagramme d'état `DemandeConge` affirmait à tort que l'annulation n'était pas atteignable). À maintenir à jour si le modèle change ; un diagramme qui ment est pire que pas de diagramme.
 
 ## Cas d'utilisation
 
@@ -18,6 +18,7 @@ flowchart LR
         UC2["Joindre des justificatifs"]
         UC3["Consulter ses demandes"]
         UC4["Consulter une demande où je suis impliqué"]
+        UC4b["Annuler sa demande (brouillon ou en cours)"]
     end
 
     subgraph Validation hiérarchique
@@ -30,6 +31,8 @@ flowchart LR
     subgraph Administration
         UC9["Créer un compte agent"]
         UC10["Consulter la liste des agents"]
+        UC10b["Gérer directions et services"]
+        UC10c["Gérer le calendrier des jours fériés"]
     end
 
     subgraph Attestation
@@ -39,6 +42,7 @@ flowchart LR
 
     Agent --> UC1 --> UC2
     Agent --> UC3 --> UC4
+    Agent --> UC4b
     Agent --> UC11
 
     ChefService --> UC5 --> UC6
@@ -52,6 +56,8 @@ flowchart LR
     Directeur -.-> UC1
 
     RH --> UC9 --> UC10
+    RH --> UC10b
+    RH --> UC10c
 
     Public --> UC12
 ```
@@ -100,6 +106,10 @@ classDiagram
     class JustificatifDemande {
         +fichier: File
     }
+    class JourFerie {
+        +date: date [unique]
+        +libelle: str
+    }
     class Attestation {
         +numero_serie: UUID
         +hash_verification: str
@@ -120,6 +130,8 @@ classDiagram
     EtapeValidation "*" --> "1" User : validateur
     JustificatifDemande "*" --> "1" TypeJustificatif
     TypeConge "1" --> "*" TypeJustificatif : justificatifs_requis (via table de jonction)
+
+    note for JourFerie "Aucune relation en base : consultée par date dans conges/services.py::nombre_jours, pas liée à DemandeConge par clé étrangère."
 ```
 
 ## Diagramme de séquence — parcours critique
@@ -134,6 +146,7 @@ sequenceDiagram
     actor CAB as Chef de cabinet
     participant API
     participant DB as PostgreSQL
+    participant Mail as Email (notifications.py)
 
     Agent->>API: POST /demandes/ (type, dates, motif)
     API->>DB: DemandeConge(statut=BROUILLON)
@@ -141,7 +154,7 @@ sequenceDiagram
     API->>DB: JustificatifDemande
 
     Agent->>API: POST /demandes/{id}/soumettre/
-    API->>API: valider_duree(type_conge, dates)
+    API->>API: valider_duree(type_conge, dates) — exclut week-ends + JourFerie
     API->>API: justificatifs_manquants(demande)
     alt justificatif manquant ou durée invalide
         API-->>Agent: 400 — motif de l'erreur
@@ -149,26 +162,31 @@ sequenceDiagram
         API->>DB: statut = EN_COURS
         API->>API: construire_circuit_validation() selon le rôle du demandeur
         API->>DB: EtapeValidation(ordre=1..N, EN_ATTENTE)
+        API->>Mail: notifier_nouvelle_etape(étape 1) → email au premier validateur
     end
 
     CS->>API: POST /demandes/{id}/etapes/{e1}/approuver/
     API->>API: vérifie que CS = validateur de l'étape courante
     API->>DB: étape 1 → APPROUVEE
+    API->>Mail: notifier_nouvelle_etape(étape 2) → email au directeur
 
     DIR->>API: POST /demandes/{id}/etapes/{e2}/approuver/ (duree_accordee_jours?)
     API->>DB: étape 2 → APPROUVEE
     opt durée accordée différente de la demande
         API->>DB: date_fin_validee = date_debut + duree_accordee_jours
     end
+    API->>Mail: notifier_nouvelle_etape(étape 3) → email au chef de cabinet
 
     CAB->>API: POST /demandes/{id}/etapes/{e3}/approuver/
     API->>DB: étape 3 → APPROUVEE
     API->>API: plus d'étape EN_ATTENTE → statut = APPROUVEE
     API->>API: generer_attestation() : PDF + QR + HMAC-SHA256
     API->>DB: Attestation(numero_serie, hash_verification, fichier_pdf)
+    API->>Mail: notifier_approbation_finale(demande) → email à l'agent
     API-->>CAB: demande à jour (attestation incluse)
 
     Note over Agent,API: L'agent consulte ensuite sa demande : l'attestation est visible et téléchargeable.
+    Note over API,Mail: Un rejet à n'importe quelle étape déclenche notifier_rejet(étape) → email à l'agent, au lieu de la chaîne ci-dessus. L'envoi est best-effort : une erreur SMTP est loguée mais ne fait jamais échouer l'action métier.
 ```
 
 ## Diagramme d'état — cycle de vie d'une `DemandeConge`
@@ -182,11 +200,13 @@ stateDiagram-v2
     APPROUVEE --> [*]
     REJETEE --> [*]
 
-    BROUILLON --> ANNULEE : annulation par l'agent
+    BROUILLON --> ANNULEE : annuler() par l'agent (POST /demandes/{id}/annuler/)
+    EN_COURS --> ANNULEE : annuler() par l'agent, même après soumission
     note right of ANNULEE
-        Statut modélisé mais aucune
-        action API ne l'atteint encore
-        (gap connu, voir docs/03)
+        Implémenté (conges/services.py::annuler_demande) :
+        interdit une fois APPROUVEE ou REJETEE
+        (statuts terminaux). Testé dans
+        conges/test_api.py::test_annulation_par_le_demandeur.
     end note
     ANNULEE --> [*]
 ```

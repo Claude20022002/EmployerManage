@@ -1,0 +1,84 @@
+\chapter{Choix technologiques}
+\label{chap:choix-technologiques}
+
+Le Ministère de l'Économie, des Finances et du Budget avait fixé dès le départ le socle technique du projet : Django côté serveur, React côté interface, PostgreSQL pour le stockage des données. Cette contrainte n'a cependant pas dispensé d'une réflexion sur la manière de l'exploiter au mieux : chaque brique complémentaire, du framework de test au mécanisme d'authentification, a fait l'objet d'un choix motivé plutôt que d'une reprise par défaut. Ce chapitre expose ces choix et les raisons qui les justifient.
+
+\section{Backend}
+
+\subsection{Django et Django REST Framework}
+
+Django a été retenu non seulement parce qu'il était imposé, mais parce qu'il correspond bien à la nature du projet. Contrairement à des micro-frameworks comme Flask ou FastAPI, qui laissent l'essentiel de l'architecture à la charge du développeur, Django fournit d'emblée un système d'authentification, un panneau d'administration généré automatiquement, un mécanisme de migrations de base de données fiable et des protections de sécurité activées par défaut, notamment contre les attaques de type CSRF et l'injection SQL. Pour une application administrative appelée à gérer des données personnelles et médicales, disposer de ces protections sans avoir à les réimplémenter réduit sensiblement le risque d'erreur.
+
+Django REST Framework est venu compléter Django pour exposer une API structurée. Il apporte une gestion déclarative des permissions, des sérialiseurs qui valident les données entrantes et sortantes de façon homogène, et un système de limitation de débit qui a directement servi à protéger la page de connexion contre les tentatives répétées de mot de passe. Ce choix a permis de séparer nettement la logique métier, portée par Django, de sa présentation au format JSON, portée par le framework REST.
+
+\subsection{PostgreSQL}
+
+PostgreSQL a été préféré, dans l'esprit du cahier des charges, à des alternatives comme MySQL pour la rigueur avec laquelle il applique les contraintes d'intégrité et les transactions. Cette rigueur compte particulièrement ici : le circuit de validation d'une demande de congé enchaîne plusieurs écritures liées (changement de statut, création d'une étape suivante, génération de l'attestation) qui doivent réussir ou échouer ensemble, sans laisser la base dans un état incohérent. PostgreSQL est par ailleurs un logiciel libre, sans coût de licence, ce qui correspond aux contraintes budgétaires d'une administration publique.
+
+\section{Frontend}
+
+\subsection{React et TypeScript}
+
+React a permis de construire l'interface comme un assemblage de composants réutilisables, plutôt bien adapté à une application qui présente les mêmes informations sous des formes différentes selon le rôle de l'utilisateur connecté : un agent, un chef de service et le personnel des ressources humaines ne voient pas les mêmes écrans, mais partagent des éléments communs comme la bannière ou les indicateurs de statut.
+
+Le choix du TypeScript, en plus de React, ne relevait pas d'une obligation mais d'une décision d'ingénierie. L'application échange en permanence des structures de données avec l'API du serveur (une demande de congé, une étape de validation, un agent), et le typage statique permet de détecter à la compilation des erreurs qui, en JavaScript pur, ne se révéleraient qu'à l'exécution, potentiellement devant l'utilisateur final. Cette rigueur a un coût en temps de développement, jugé acceptable au regard du bénéfice pour la maintenabilité à long terme du projet.
+
+\subsection{Vite}
+
+Vite a été choisi comme outil de construction plutôt que des solutions plus anciennes comme Create React App, aujourd'hui dépréciée. Il démarre un serveur de développement en une fraction de seconde et recharge l'interface presque instantanément après chaque modification, ce qui a concrètement accéléré les itérations pendant le développement.
+
+\section{Authentification et sécurité}
+
+\subsection{Authentification par session plutôt que par jeton JWT}
+
+Deux approches usuelles s'opposaient pour authentifier les utilisateurs auprès de l'API~: les jetons JWT, stockés côté client, ou les sessions, gérées côté serveur par un cookie. Le choix s'est porté sur la session pour plusieurs raisons. D'abord, l'application ne compte qu'un seul client de confiance, l'interface React elle-même, ce qui ne justifie pas la complexité d'un mécanisme pensé à l'origine pour des écosystèmes multi-clients. Ensuite, un jeton JWT stocké dans le stockage local du navigateur reste exposé en cas de faille de type XSS, alors qu'un cookie de session, correctement configuré, échappe à l'accès direct du code JavaScript. Enfin, Django intègre nativement la gestion des sessions et leur invalidation, ce qui évite de redévelopper une logique de expiration et de révocation des jetons.
+
+Cette décision a eu une conséquence concrète décrite au chapitre suivant : l'authentification par session impose une protection CSRF active, dont la configuration entre deux origines différentes a été à l'origine d'une anomalie corrigée en cours de projet.
+
+\subsection{Authenticité des attestations~: HMAC et QR code plutôt que signature numérique}
+
+La délivrance d'une attestation authentifiable pouvait s'appuyer sur deux familles de solutions~: une infrastructure à clés publiques, avec signature numérique du document, ou un mécanisme de vérification centralisée auprès du serveur qui a délivré le document. La première offre l'avantage d'une vérification possible hors connexion, mais suppose la mise en place d'une autorité de certification et la distribution d'une clé publique aux personnes appelées à vérifier les documents, une infrastructure disproportionnée pour un premier déploiement.
+
+Le choix s'est porté sur la seconde approche~: chaque attestation reçoit un numéro de série et un code de vérification calculé par une fonction de hachage à clé (HMAC-SHA256), à partir des informations de la demande et d'une clé connue du seul serveur. Un code QR imprimé sur l'attestation encode un lien vers une page de vérification publique, qui ne révèle les informations de la demande que si le code fourni correspond à celui recalculé côté serveur. Cette approche empêche de deviner un numéro valide par tâtonnement, sans nécessiter la moindre infrastructure de certificats.
+
+\section{Outils de développement et de qualité}
+
+\subsection{Tests automatisés}
+
+Deux outils de test complémentaires ont été mobilisés. Le framework de test intégré à Django, associé à celui de Django REST Framework, a permis de vérifier la logique métier et l'API indépendamment de toute interface graphique~: construction du circuit de validation, permissions, génération de l'attestation. Playwright a ensuite permis de rejouer des parcours complets dans un navigateur réel, sans mock ni simulation. Cette seconde catégorie de tests s'est révélée décisive~: elle a mis en évidence une anomalie de configuration CSRF que les tests unitaires, en s'exécutant sans navigateur, n'auraient pas pu détecter.
+
+\subsection{Conteneurisation avec Docker}
+
+Docker a été utilisé pour isoler la base de données PostgreSQL de l'environnement de développement local, évitant toute installation manuelle et les conflits de version. Cette même approche a ensuite été étendue à l'ensemble de l'application (serveur, interface, proxy, sauvegardes) pour disposer d'une stack reproductible, prête à être transposée vers un environnement d'hébergement réel.
+
+\section{Synthèse}
+
+Le tableau~\ref{tab:choix-technologiques} résume les choix présentés dans ce chapitre.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{|p{2.8cm}|p{3.6cm}|p{3.6cm}|p{4cm}|}
+        \hline
+        \textbf{Domaine} & \textbf{Choix retenu} & \textbf{Alternative(s) écartée(s)} & \textbf{Raison principale} \\
+        \hline
+        Backend & Django + Django REST Framework & Flask, FastAPI & Sécurité et fonctionnalités intégrées par défaut \\
+        \hline
+        Base de données & PostgreSQL & MySQL & Rigueur transactionnelle, logiciel libre \\
+        \hline
+        Frontend & React + TypeScript & Vue.js, Angular & Imposé par le cahier des charges~; TypeScript ajouté pour la fiabilité \\
+        \hline
+        Outil de build & Vite & Create React App & Rapidité de développement, standard actuel \\
+        \hline
+        Authentification & Session Django & Jeton JWT & Un seul client de confiance, moins exposé au XSS \\
+        \hline
+        Authenticité document & HMAC-SHA256 + QR code & Signature numérique (PKI) & Pas d'infrastructure de certificats à déployer \\
+        \hline
+        Tests & Django test framework + Playwright & Tests manuels uniquement & Détection d'anomalies réelles avant mise en production \\
+        \hline
+        Environnement & Docker / Docker Compose & Installation manuelle & Reproductibilité, préparation au déploiement \\
+        \hline
+    \end{tabular}
+    \caption{Synthèse des choix technologiques du projet}
+    \label{tab:choix-technologiques}
+\end{table}

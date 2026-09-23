@@ -1,0 +1,24 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+La gestion des congés au sein du Ministère de l'Économie, des Finances et du Budget de la République de Guinée reposait jusqu'ici sur des procédures manuelles, lentes et difficiles à tracer. Ce rapport présente la conception et le développement d'une application web destinée à moderniser ce processus, depuis la demande initiale d'un agent jusqu'à la délivrance d'une attestation de congé authentifiable.
+
+Le projet s'est appuyé, dans un premier temps, sur l'analyse d'une solution libre existante, frappe/hrms, afin d'en tirer des enseignements fonctionnels avant de choisir une réécriture complète sur la pile technique demandée par le ministère : Django et Django REST Framework côté serveur, React et TypeScript côté interface, PostgreSQL pour le stockage des données. Le cœur du système modélise un circuit de validation hiérarchique à plusieurs niveaux, dont le nombre d'étapes s'adapte dynamiquement au rôle du demandeur, ainsi qu'un mécanisme d'authentification des attestations reposant sur un code de vérification cryptographique et un code QR, consultable publiquement sans exposer d'information sensible.
+
+Le développement a été mené de façon itérative, avec une attention particulière portée à la vérification de chaque fonctionnalité par des tests automatisés, aussi bien côté serveur que dans un navigateur réel. Cette démarche a permis de détecter et de corriger plusieurs anomalies avant leur mise en production, et de documenter précisément les difficultés rencontrées ainsi que les solutions apportées.
+
+\vspace{0.5cm}
+\noindent\textbf{Mots-clés~:} gestion des congés, administration publique, Django, React, PostgreSQL, workflow de validation, authenticité documentaire.
+
+\vspace{1cm}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Leave management within the Ministry of Economy, Finance and Budget of the Republic of Guinea had until now relied on manual, slow and hard-to-track procedures. This report presents the design and development of a web application meant to modernize this process, from an employee's initial request to the issuance of an authenticated leave certificate.
+
+The project first drew on the analysis of an existing open-source solution, frappe/hrms, to extract functional lessons before settling on a full rewrite using the technology stack requested by the ministry: Django and Django REST Framework on the server side, React and TypeScript on the interface side, and PostgreSQL for data storage. At the core of the system lies a multi-level hierarchical approval workflow whose number of steps adapts dynamically to the requester's role, together with a certificate authentication mechanism based on a cryptographic verification code and a QR code, publicly checkable without exposing sensitive information.
+
+Development proceeded iteratively, with particular attention paid to verifying each feature through automated tests, both on the server and in a real browser. This approach made it possible to catch and fix several issues before they reached production, and to document precisely the difficulties encountered along with the solutions adopted.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} leave management, public administration, Django, React, PostgreSQL, approval workflow, document authenticity.

@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from . import services
 from .attestation import code_verification_valide
 from .models import Attestation, DemandeConge, JourFerie, JustificatifDemande, StatutDemande, TypeConge
-from .permissions import PeutVoirDemande, est_implique
+from .permissions import est_implique
 from .serializers import (
     DecisionEtapeSerializer,
     DemandeCongeCreateSerializer,

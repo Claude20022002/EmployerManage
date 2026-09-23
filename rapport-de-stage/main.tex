@@ -1,0 +1,69 @@
+\documentclass[12pt, a4paper]{report}
+\input{preambule}
+
+% ============================================================================
+% INFORMATIONS DU RAPPORT
+% Tout ce qui est marqué [FICTIF] est un espace réservé à remplacer par les
+% vraies informations avant l'impression ou la soutenance. Centralisé ici
+% pour n'avoir qu'un seul endroit à corriger.
+% ============================================================================
+\newcommand{\etudiant}{Diogo Balde}
+\newcommand{\ecole}{HESTIM}
+\newcommand{\ecoleComplet}{Hautes Études des Sciences et Techniques de l'Ingénieur et du Management}
+\newcommand{\filiere}{Génie Informatique} % [FICTIF]
+\newcommand{\cycle}{Cycle Ingénieur — 5\ieme{} année} % [FICTIF]
+\newcommand{\anneeAcademique}{2025 -- 2026} % [FICTIF]
+
+\newcommand{\titreRapport}{Conception et développement d'une application de gestion des congés pour le Ministère de l'Économie, des Finances et du Budget de la République de Guinée}
+
+\newcommand{\structureAccueil}{Ministère de l'Économie, des Finances et du Budget}
+\newcommand{\paysStructure}{République de Guinée}
+
+\newcommand{\maitreDeStage}{M. Ibrahima Conté} % [FICTIF]
+\newcommand{\maitreDeStageTitre}{Chef du Service Informatique, MEFB} % [FICTIF]
+\newcommand{\encadreurAcademique}{Pr. Amina El Fassi} % [FICTIF]
+\newcommand{\encadreurAcademiqueTitre}{Enseignante-chercheuse, \ecole} % [FICTIF]
+
+\newcommand{\periodeStage}{du 01 juillet 2026 au 30 septembre 2026} % [FICTIF]
+\newcommand{\villeSoutenance}{Casablanca} % [FICTIF]
+\newcommand{\dateSoutenance}{Septembre 2026} % [FICTIF]
+
+% Pour insérer un logo une fois disponible :
+%   \newcommand{\logoEcole}{images/logo-hestim.png}
+% et remplacer le bloc "HESTIM" en texte de la page de garde par
+%   \includegraphics[height=2.5cm]{\logoEcole}
+% \ieme (ex. "5\ieme{} année") est déjà fourni par babel-french, inutile de le redéfinir.
+
+\begin{document}
+
+\input{pages/garde}
+
+\pagenumbering{roman}
+
+\input{pages/remerciements}
+\input{pages/resume}
+
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+\input{pages/abreviations}
+
+\clearpage
+\pagenumbering{arabic}
+
+\input{chapters/introduction}
+
+% Les chapitres suivants seront ajoutés au fur et à mesure, sur la base de
+% docs/01 à docs/07 du projet :
+%   \input{chapters/etat-des-lieux}
+%   \input{chapters/besoins}
+%   \input{chapters/architecture}
+\input{chapters/choix-technologiques}
+\input{chapters/realisation}
+%   \input{chapters/tests-et-difficultes}
+%   \input{chapters/conclusion}
+
+\end{document}
